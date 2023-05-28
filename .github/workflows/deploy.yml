@@ -10,6 +10,6 @@ jobs:
     - name: Deploy
       run: |
         ssh root@212.86.108.148 | git clone https://github.com/Hijacker555/telebot.git
-        ssh root@212.86.108.148 | chmod +x telebot/chatgpt.py
-        ssh root@212.86.108.148 | python3 telebot/chatgpt.py &
+        ssh root@212.86.108.148 | chmod +x chatgpt.py
+        ssh root@212.86.108.148 | python3 chatgpt.py &
 
