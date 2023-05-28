@@ -1,17 +1,19 @@
+# Telegram Bot Open AI
 import openai
 import telebot
 
 TOKEN="5208193858:AAG3k-1QQM4px2i5TnBXOgjJZz-tsvzszMM"
 bot = telebot.TeleBot(TOKEN)
 
+# Start
 @bot.message_handler(commands=['start'])
 def start(message):
     bot.send_message(chat_id=message.chat.id, text=
                      "Hi, I'm a bot powered by OpenAI. How can I help you today?")
 
+#Request
 @bot.message_handler(content_types=['text'])
 def reply(message):
-    #Request
     request = message.text
     response = openai.Completion.create(
         engine="text-davinci-003",
