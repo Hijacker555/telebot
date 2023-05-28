@@ -9,7 +9,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Deploy
       run: |
-        ssh root@212.86.108.148 | git clone https://github.com/Hijacker555/telebot.git |
-        chmod +x chatgpt.py |
-        python3 chatgpt.py &
+        ssh root@212.86.108.148 | git clone https://github.com/Hijacker555/telebot.git
+        ssh root@212.86.108.148 | chmod +x telebot/chatgpt.py
+        ssh root@212.86.108.148 | python3 telebot/chatgpt.py &
 
