@@ -5,7 +5,7 @@ import telebot
 
 def readfile(file):
     """ Read file """
-    with open(file, "r", encoding=UnicodeTranslateError) as file1:
+    with open(file, "r", encoding=None) as file1:
         for line in file1:
             return line.strip()
 
