@@ -11,7 +11,6 @@ def readfile(file):
 
 
 TOKEN = readfile("telebotapi.txt")
-print(TOKEN)
 bot = telebot.TeleBot(TOKEN)
 
 
