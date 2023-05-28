@@ -6,7 +6,8 @@ bot = telebot.TeleBot(token)
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.send_message(chat_id=message.chat.id, text="Hi, I'm a bot powered by OpenAI. How can I help you today?")
+    bot.send_message(chat_id=message.chat.id, text=
+                     "Hi, I'm a bot powered by OpenAI. How can I help you today?")
 
 @bot.message_handler(content_types=['text'])
 def reply(message):
