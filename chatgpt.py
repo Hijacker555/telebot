@@ -26,5 +26,5 @@ def reply(message):
     bot.send_message(chat_id=message.chat.id, text=response)
 
 if __name__ == '__main__':
-    openai.api_key = "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"
+    openai.api_key = "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"
     bot.polling()
