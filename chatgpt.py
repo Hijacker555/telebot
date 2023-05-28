@@ -5,16 +5,9 @@ import telebot
 
 def readfile(file):
     """ Read file """
-    file1 = open(file, "r", encoding=UnicodeTranslateError)
-
-    while True:
-        line = file1.readline()
-        if not line:
-            break
-        file1.close
-    return line.strip()
-
-
+    with open(file, "r", encoding=UnicodeTranslateError) as file1:
+        for line in file1:
+            return line.strip()
 
 
 TOKEN = readfile("telebotapi.txt")
