@@ -2,6 +2,7 @@
 import openai
 import telebot
 
+
 def readFile(file):
     file1 = open(file, "r")
 
@@ -9,9 +10,10 @@ def readFile(file):
         line = file1.readline()
         if not line:
             break
-        return(line.strip())
+        return (line.strip())
 
     file1.close
+
 
 TOKEN = readFile("telebotapi.txt")
 print(TOKEN)
