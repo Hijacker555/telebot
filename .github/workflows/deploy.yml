@@ -1,15 +1,12 @@
 name: Deploy Python App
 
-on:
-  push:
-    branches:
-      - master
+on: [push]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Deploy
       run: |
         ssh root:212.86.108.148 'git clone https://github.com/Hijacker555/telebot/blob/711b2deca5208a49e3acc69fd87a3c26c211879f/chatgpt.py'
