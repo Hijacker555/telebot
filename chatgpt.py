@@ -3,8 +3,14 @@ import openai
 import telebot
 
 
-TOKEN = lambda f: f.readline("telebotapi.txt")
-print (TOKEN)
+def readfile(file):
+    """ Read file """
+    with open(file, "r", encoding="UTF-8") as file1:
+        for line in file1:
+            return line.strip()
+
+
+TOKEN = readfile("telebotapi.txt")
 bot = telebot.TeleBot(TOKEN)
 
 
@@ -31,5 +37,5 @@ def reply(message):
 
 
 if __name__ == '__main__':
-    openai.api_key = lambda f: f.readline("openapi.txt")
+    openai.api_key = readfile("openapi.txt")
     bot.polling()
