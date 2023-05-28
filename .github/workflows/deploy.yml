@@ -9,7 +9,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Deploy
       run: |
-        ssh -T root@212.86.108.148 || True 'git clone https://github.com/Hijacker555/telebot/blob/711b2deca5208a49e3acc69fd87a3c26c211879f/chatgpt.py'
+        ssh -T root@212.86.108.148 || yes 'git clone https://github.com/Hijacker555/telebot/blob/711b2deca5208a49e3acc69fd87a3c26c211879f/chatgpt.py'
     - name: Restart server
       run: |
         ssh root@212.86.108.148 'python3 chatgpt.py &'
