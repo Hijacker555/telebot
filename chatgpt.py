@@ -1,8 +1,8 @@
 import openai
 import telebot
 
-token="5208193858:AAG3k-1QQM4px2i5TnBXOgjJZz-tsvzszMM"
-bot = telebot.TeleBot(token)
+TOKEN="5208193858:AAG3k-1QQM4px2i5TnBXOgjJZz-tsvzszMM"
+bot = telebot.TeleBot(TOKEN)
 
 @bot.message_handler(commands=['start'])
 def start(message):
