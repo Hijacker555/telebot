@@ -2,7 +2,7 @@
 import openai
 import telebot
 
-TOKEN = "5208193858:AAG3k-1QQM4px2i5TnBXOgjJZz-tsvzszMM"
+TOKEN = open("telebotapi.txt", "r").readline
 bot = telebot.TeleBot(TOKEN)
 
 
@@ -29,5 +29,5 @@ def reply(message):
 
 
 if __name__ == '__main__':
-    openai.api_key = "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"
+    openai.api_key = open("openapi.txt", "r").readline
     bot.polling()
