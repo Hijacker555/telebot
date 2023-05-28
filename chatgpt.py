@@ -11,6 +11,7 @@ def start(message):
 
 @bot.message_handler(content_types=['text'])
 def reply(message):
+    #Request
     request = message.text
     response = openai.Completion.create(
         engine="text-davinci-003",
