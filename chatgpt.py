@@ -2,14 +2,16 @@
 import openai
 import telebot
 
-TOKEN="5208193858:AAG3k-1QQM4px2i5TnBXOgjJZz-tsvzszMM"
+TOKEN = "5208193858:AAG3k-1QQM4px2i5TnBXOgjJZz-tsvzszMM"
 bot = telebot.TeleBot(TOKEN)
+
 
 @bot.message_handler(commands=['start'])
 def start(message):
     """ Start """
-    bot.send_message(chat_id=message.chat.id, text=
-                     "Hi, I'm a bot powered by OpenAI. How can I help you today?")
+    bot.send_message(chat_id=message.chat.id,
+                     text="Hi, I'm a bot powered by OpenAI. How can I help you today?")
+
 
 @bot.message_handler(content_types=['text'])
 def reply(message):
@@ -24,6 +26,7 @@ def reply(message):
         temperature=0.5,
     ).get("choices")[0].text
     bot.send_message(chat_id=message.chat.id, text=response)
+
 
 if __name__ == '__main__':
     openai.api_key = "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"
