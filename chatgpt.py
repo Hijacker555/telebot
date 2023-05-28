@@ -9,10 +9,12 @@ def readfile(file):
 
     while True:
         line = file1.readline()
-        break
-        return line.strip()
+        if not line:
+            break
+        file1.close
+    return line.strip()
 
-    file1.close
+
 
 
 TOKEN = readfile("telebotapi.txt")
