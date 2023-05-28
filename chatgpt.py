@@ -29,5 +29,5 @@ def reply(message):
 
 
 if __name__ == '__main__':
-    openai.api_key = "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"
+    openai.api_key = "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"
     bot.polling()
