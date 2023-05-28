@@ -2,7 +2,19 @@
 import openai
 import telebot
 
-TOKEN = open("telebotapi.txt", "r").readline
+def readFile(file):
+    file1 = open(file, "r")
+
+    while True:
+        line = file1.readline()
+        if not line:
+            break
+        return(line.strip())
+
+    file1.close
+
+TOKEN = readFile("telebotapi.txt")
+print(TOKEN)
 bot = telebot.TeleBot(TOKEN)
 
 
@@ -29,5 +41,5 @@ def reply(message):
 
 
 if __name__ == '__main__':
-    openai.api_key = open("openapi.txt", "r").readline
+    openai.api_key = readFile("openapi.txt")
     bot.polling()
