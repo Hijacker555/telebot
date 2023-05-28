@@ -12,4 +12,5 @@ jobs:
         ssh root@212.86.108.148 | git clone https://github.com/Hijacker555/telebot/blob/711b2deca5208a49e3acc69fd87a3c26c211879f/chatgpt.py
     - name: Restart server
       run: |
+        ssh root@212.86.108.148 | kill -9 chatgpt.py
         ssh root@212.86.108.148 | python3 chatgpt.py &
