@@ -15,6 +15,9 @@ def read_file(file):
             return line.strip()
 
 
+# Authorized users
+AUTHORIZED_USERS = ["hijacker555", "PadreAlexey", "Asmot00"]
+
 # API Keys
 TELEGRAMBOT_API_KEY = read_file("telebotapi.txt")
 OPENAI_API_KEY = read_file("openapi.txt")
@@ -41,9 +44,6 @@ file_handler.setFormatter(formatter)
 # Add the file handler to the logger
 logger = logging.getLogger(__name__)
 logger.addHandler(file_handler)
-
-# Authorized users
-AUTHORIZED_USERS = ["hijacker555", "PadreAlexey", "Asmot00"]
 
 
 @bot.message_handler(commands=['start'])
