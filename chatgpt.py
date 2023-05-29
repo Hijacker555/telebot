@@ -1,6 +1,7 @@
 """ Telegram Bot Open AI """
 import openai
 import telebot
+import logging
 
 
 def readfile(file):
@@ -14,6 +15,14 @@ TOKEN = readfile("telebotapi.txt")
 bot = telebot.TeleBot(TOKEN)
 
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
 @bot.message_handler(commands=['start'])
 def start(message):
     """ Start """
@@ -25,17 +34,23 @@ def start(message):
 def reply(message):
     """ Request """
     request = message.text
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt="You: " + request + "\nBot: ",
-        max_tokens=1024,
-        n=1,
-        stop=None,
-        temperature=0.5,
-    ).get("choices")[0].text
-    bot.send_message(chat_id=message.chat.id, text=response)
+    logger.info(f"Received message: {request}")
+    try:
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt="You: " + request + "\nBot: ",
+            max_tokens=1024,
+            n=1,
+            stop=None,
+            temperature=0.5,
+        ).get("choices")[0].text
+        bot.send_message(chat_id=message.chat.id, text=response)
+        logger.info(f"Sent response: {response}")
+    except Exception as e:
+        logger.error(f"Error processing message: {e}")
 
 
 if __name__ == '__main__':
     openai.api_key = readfile("openapi.txt")
+    logger.info("Bot started")
     bot.polling()
