@@ -1,8 +1,8 @@
 """ Telegram Bot Open AI """
-import aiohttp
-import asyncio
-import tracemalloc
 import logging
+import tracemalloc
+import asyncio
+import aiohttp
 import openai
 from telebot import types
 from telebot.async_telebot import AsyncTeleBot
@@ -113,7 +113,7 @@ async def weather_handler(message):
                     if fact:
                         temperature = fact.get('temp')
                         weather_description = fact.get('condition')
-                        weather_info = f"Temperature: {temperature}°C"
+                        weather_info = f"Temperature: {temperature}°C\n Description: {weather_description}"
                         await bot.reply_to(message, weather_info)
                         logger.info(
                             "Weather information sent to user: %s", weather_info)
