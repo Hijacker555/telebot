@@ -8,9 +8,6 @@ from telebot import types
 from telebot.async_telebot import AsyncTeleBot
 
 
-tracemalloc.start()
-
-
 def read_file(file):
     """ Read file """
     with open(file, "r", encoding="UTF-8") as file1:
@@ -167,6 +164,7 @@ def create_menu():
 
 
 if __name__ == '__main__':
+    tracemalloc.start()
     openai.api_key = read_file("openapi.txt")
     logger.info("Bot started")
     asyncio.run(bot.polling())
