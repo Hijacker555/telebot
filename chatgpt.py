@@ -2,6 +2,7 @@
 import logging
 import openai
 import telebot
+from telebot import types
 
 
 def read_file(file):
@@ -40,8 +41,10 @@ def start(message):
     """ Start """
     username = message.from_user.username
     if username in AUTHORIZED_USERS:
+        markup = create_menu()
         bot.send_message(chat_id=message.chat.id,
-                         text="Hi, I'm a bot powered by OpenAI. How can I help you today?")
+                         text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                         reply_markup=markup)
         logger.info("User '%s' authorized and started the bot.", username)
     else:
         bot.send_message(chat_id=message.chat.id,
@@ -75,6 +78,15 @@ def reply(message):
         bot.send_message(chat_id=message.chat.id,
                          text="Sorry, you are not authorized to use this bot.")
         logger.warning("Unauthorized access attempt by user '%s'.", username)
+
+
+def create_menu():
+    """ Create menu with buttons """
+    markup = types.ReplyKeyboardMarkup(row_width=2)
+    openai_button = types.KeyboardButton("chatGPT")
+    menu_buttons = [openai_button, "Button 2", "Button 3"]
+    markup.add(*menu_buttons)
+    return markup
 
 
 if __name__ == '__main__':
