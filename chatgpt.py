@@ -26,7 +26,8 @@ file_handler = logging.FileHandler('/var/log/bot.log')
 file_handler.setLevel(logging.INFO)
 
 # Create formatter and add it to the file handler
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
 
 # Add the file handler to the logger
@@ -35,6 +36,7 @@ logger.addHandler(file_handler)
 
 # Authorized users
 AUTHORIZED_USERS = ["hijacker555", "user2", "user3"]
+
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -46,6 +48,21 @@ def start(message):
                          text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
                          reply_markup=markup)
         logger.info("User '%s' authorized and started the bot.", username)
+    else:
+        bot.send_message(chat_id=message.chat.id,
+                         text="Sorry, you are not authorized to use this bot.")
+        logger.warning("Unauthorized access attempt by user '%s'.", username)
+
+
+@bot.message_handler(func=lambda message: message.text == "chatGPT")
+def openai_handler(message):
+    """ chatGPT button handler """
+    username = message.from_user.username
+    if username in AUTHORIZED_USERS:
+        bot.send_message(chat_id=message.chat.id,
+                         text="chatGPT button pressed")
+        logger.info("User '%s' pressed chatGPT button", username)
+        # Add your OpenAI logic here
     else:
         bot.send_message(chat_id=message.chat.id,
                          text="Sorry, you are not authorized to use this bot.")
@@ -73,7 +90,8 @@ def reply(message):
             bot.send_message(chat_id=message.chat.id, text=response)
             logger.info("Sent response to '%s': %s", username, response)
         except openai.OpenAIError as ex:
-            logger.error("Error processing message from '%s': %s", username, ex)
+            logger.error(
+                "Error processing message from '%s': %s", username, ex)
     else:
         bot.send_message(chat_id=message.chat.id,
                          text="Sorry, you are not authorized to use this bot.")
