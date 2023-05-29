@@ -19,10 +19,21 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+# Create file handler for logging
+file_handler = logging.FileHandler('/var/log/bot.log')
+file_handler.setLevel(logging.INFO)
+
+# Create formatter and add it to the file handler
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+
+# Add the file handler to the logger
 logger = logging.getLogger(__name__)
+logger.addHandler(file_handler)
 
 # Authorized users
-AUTHORIZED_USERS = ["@hijacker555", "user2", "user3"]
+AUTHORIZED_USERS = ["hijacker555", "user2", "user3"]
 
 @bot.message_handler(commands=['start'])
 def start(message):
