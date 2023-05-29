@@ -18,14 +18,13 @@ def read_file(file):
             return line.strip()
 
 
+# TelegramBot API Endpoint
 TOKEN = read_file("telebotapi.txt")
 bot = AsyncTeleBot(TOKEN)
 
-
-# OpenWeatherMap API Endpoint
+# YandexWeather API Endpoint
 API_KEY = read_file("yandexweatherapi.txt")
 API_URL = 'https://api.weather.yandex.ru/v2/forecast'
-
 
 # Configure logging
 logging.basicConfig(
