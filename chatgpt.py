@@ -1,7 +1,7 @@
 """ Telegram Bot Open AI """
+import logging
 import openai
 import telebot
-import logging
 
 
 def readfile(file):
@@ -34,7 +34,7 @@ def start(message):
 def reply(message):
     """ Request """
     request = message.text
-    logger.info(f"Received message: {request}")
+    logger.info("Received message: %s", request)
     try:
         response = openai.Completion.create(
             engine="text-davinci-003",
@@ -45,9 +45,9 @@ def reply(message):
             temperature=0.5,
         ).get("choices")[0].text
         bot.send_message(chat_id=message.chat.id, text=response)
-        logger.info(f"Sent response: {response}")
-    except Exception as e:
-        logger.error(f"Error processing message: {e}")
+        logger.info("Sent response: %s", response)
+    except openai.OpenAIError as ex:
+        logger.error("Error processing message: %s", ex)
 
 
 if __name__ == '__main__':
