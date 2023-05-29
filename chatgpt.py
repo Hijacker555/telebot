@@ -31,11 +31,11 @@ def start(message):
     if username in AUTHORIZED_USERS:
         bot.send_message(chat_id=message.chat.id,
                          text="Hi, I'm a bot powered by OpenAI. How can I help you today?")
-        logger.info(f"User '{username}' authorized and started the bot.")
+        logger.info("User '%s' authorized and started the bot.", username)
     else:
         bot.send_message(chat_id=message.chat.id,
                          text="Sorry, you are not authorized to use this bot.")
-        logger.warning(f"Unauthorized access attempt by user '{username}'.")
+        logger.warning("Unauthorized access attempt by user '%s'.", username)
 
 
 @bot.message_handler(content_types=['text'])
@@ -63,7 +63,7 @@ def reply(message):
     else:
         bot.send_message(chat_id=message.chat.id,
                          text="Sorry, you are not authorized to use this bot.")
-        logger.warning(f"Unauthorized access attempt by user '{username}'.")
+        logger.warning("Unauthorized access attempt by user '%s'.", username)
 
 
 if __name__ == '__main__':
