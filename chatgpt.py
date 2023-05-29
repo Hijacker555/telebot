@@ -113,7 +113,7 @@ async def weather_handler(message):
                     if fact:
                         temperature = fact.get('temp')
                         weather_description = fact.get('condition')
-                        weather_info = f"Temperature: {temperature}°C\n Description: {weather_description}"
+                        weather_info = f"Temperature: {temperature}°C\n {weather_description}"
                         await bot.reply_to(message, weather_info)
                         logger.info(
                             "Weather information sent to user: %s", weather_info)
@@ -123,7 +123,7 @@ async def weather_handler(message):
                 else:
                     logger.error(
                         "Failed to retrieve weather information. Status code: %d", response.status)
-    except Exception as ex:
+    except aiohttp.ClientError as ex:
         logger.error(
             "An error occurred while processing the message: %s", str(ex))
 
