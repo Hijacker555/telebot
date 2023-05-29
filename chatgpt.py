@@ -15,13 +15,13 @@ def read_file(file):
             return line.strip()
 
 
-# TelegramBot API Endpoint
-TOKEN = read_file("telebotapi.txt")
-bot = AsyncTeleBot(TOKEN)
+# API Keys
+TELEGRAMBOT_API_KEY = read_file("telebotapi.txt")
+OPENAI_API_KEY = read_file("openapi.txt")
+YANDEX_API_KEY = read_file("yandexweatherapi.txt")
+YANDEX_API_URL = 'https://api.weather.yandex.ru/v2/forecast'
 
-# YandexWeather API Endpoint
-API_KEY = read_file("yandexweatherapi.txt")
-API_URL = 'https://api.weather.yandex.ru/v2/forecast'
+bot = AsyncTeleBot(TELEGRAMBOT_API_KEY)
 
 # Configure logging
 logging.basicConfig(
@@ -96,13 +96,13 @@ async def weather_handler(message):
     """ Weather handler """
     try:
         async with aiohttp.ClientSession() as session:
-            headers = {'X-Yandex-API-Key': API_KEY}
+            headers = {'X-Yandex-API-Key': YANDEX_API_KEY}
             params = {
                 'lat': 59.835812,
                 'lon': 30.149159,
                 'lang': 'ru'
             }
-            async with session.get(API_URL, headers=headers, params=params) as response:
+            async with session.get(YANDEX_API_URL, headers=headers, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
                     fact = data.get('fact')
@@ -165,6 +165,6 @@ def create_menu():
 
 if __name__ == '__main__':
     tracemalloc.start()
-    openai.api_key = read_file("openapi.txt")
+    openai.api_key = OPENAI_API_KEY
     logger.info("Bot started")
     asyncio.run(bot.polling())
