@@ -1,12 +1,11 @@
 """ Telegram Bot Open AI """
-import logging
-import openai
-import telebot
 import aiohttp
 import asyncio
+import tracemalloc
+import logging
+import openai
 from telebot import types
 from telebot.async_telebot import AsyncTeleBot
-import tracemalloc
 
 
 tracemalloc.start()
@@ -114,7 +113,7 @@ async def weather_handler(message):
                     if fact:
                         temperature = fact.get('temp')
                         weather_description = fact.get('condition')
-                        weather_info = f"Current weather in Saint-Petersburg:\nTemperature: {temperature}°C\nDescription: {weather_description}"
+                        weather_info = f"Temperature: {temperature}°C"
                         await bot.reply_to(message, weather_info)
                         logger.info(
                             "Weather information sent to user: %s", weather_info)
@@ -124,9 +123,9 @@ async def weather_handler(message):
                 else:
                     logger.error(
                         "Failed to retrieve weather information. Status code: %d", response.status)
-    except Exception as e:
+    except Exception as ex:
         logger.error(
-            "An error occurred while processing the message: %s", str(e))
+            "An error occurred while processing the message: %s", str(ex))
 
 
 @bot.message_handler(content_types=['text'])
