@@ -10,7 +10,7 @@ from config import (TELEGRAMBOT_API_KEY, YANDEX_API_KEY,
 from telebot import types
 from telebot.async_telebot import AsyncTeleBot
 from db import (connect_to_database, add_user, check_user,
-                create_table)
+                create_table, get_all_users)
 
 
 bot = AsyncTeleBot(TELEGRAMBOT_API_KEY)
@@ -45,50 +45,33 @@ async def start(message):
         if check_user(connection, username):
             markup = create_menu()
             await bot.send_message(chat_id=message.chat.id,
-                                   text=
-                                   "Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                                   text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
                                    reply_markup=markup)
             logger.info("User '%s' authorized and started the bot.", username)
         else:
             add_user(connection, username)
             markup = create_menu()
             await bot.send_message(chat_id=message.chat.id,
-                                   text=
-                                   "Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                                   text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
                                    reply_markup=markup)
             logger.warning(
                 "Unauthorized access attempt by user '%s'.", username)
         connection.close()
 
 
-@bot.message_handler(func=lambda message: message.text == "Your IP")
-async def yourip_handler(message):
-    """ yourIP button handler """
-    # Получение текущего IP-адреса с помощью команды curl
-    ip_command = "curl -s https://api.ipify.org"
-    ip_address = None
-    try:
-        result = subprocess.run(
-            ip_command, capture_output=True, text=True, shell=True, check=True)
-        ip_address = result.stdout.strip()
-
-    except subprocess.CalledProcessError as ex:
-        logging.error(
-            "Ошибка при получении IP-адреса: %s", ex)
-
+@bot.message_handler(func=lambda message: message.text == "Button")
+async def users_handler(message):
+    """ Users button handler """
     username = message.from_user.username
     connection = connect_to_database()
     if connection:
-        create_table(connection)
-        if check_user(connection, username):
+        if username == 'Hijacker555':
             await bot.send_message(chat_id=message.chat.id,
-                                   text=("Your IP: ", ip_address))
-            logger.info("User '%s' pressed Your IP button", username)
-            # Add your yourIP logic here
+                                   text=(get_all_users(connection)))
+            logger.info("User '%s' pressed Users button", username)
         else:
-            add_user(connection, username)
             await bot.send_message(chat_id=message.chat.id,
-                                   text=("Your IP: ", ip_address))
+                                   text="Sorry, you are not authorized to use this button.")
             logger.warning(
                 "Unauthorized access attempt by user '%s'.", username)
         connection.close()
@@ -199,9 +182,9 @@ async def reply(message):
 def create_menu():
     """ Create menu with buttons """
     markup = types.ReplyKeyboardMarkup(row_width=2)
-    yourip_button = types.KeyboardButton("Your IP")
+    users_button = types.KeyboardButton("Button")
     openweather_button = types.KeyboardButton("YandexWeather")
-    menu_buttons = [yourip_button, openweather_button]
+    menu_buttons = [users_button, openweather_button]
     markup.add(*menu_buttons)
     return markup
 

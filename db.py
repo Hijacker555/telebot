@@ -61,3 +61,16 @@ def check_user(conn, username):
     except psycopg2.Error as ex:
         print("Ошибка при проверке наличия пользователя в базе данных:", ex)
         return False
+
+
+def get_all_users(conn):
+    """Вывод всех authorized_users из таблицы username"""
+    select_query = "SELECT username FROM authorized_users;"
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(select_query)
+            results = cursor.fetchall()
+            for row in results:
+                print(row[0])
+    except psycopg2.Error as ex:
+        print("Ошибка при получении authorized_users из базы данных:", ex)
