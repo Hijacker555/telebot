@@ -1,7 +1,6 @@
 """ Telegram Bot Open AI """
 import logging
 import tracemalloc
-import subprocess
 import asyncio
 import aiohttp
 import openai
@@ -45,14 +44,14 @@ async def start(message):
         if check_user(connection, username):
             markup = create_menu()
             await bot.send_message(chat_id=message.chat.id,
-                                   text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                                text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
                                    reply_markup=markup)
             logger.info("User '%s' authorized and started the bot.", username)
         else:
             add_user(connection, username)
             markup = create_menu()
             await bot.send_message(chat_id=message.chat.id,
-                                   text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                                text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
                                    reply_markup=markup)
             logger.warning(
                 "Unauthorized access attempt by user '%s'.", username)
@@ -67,7 +66,7 @@ async def users_handler(message):
     if connection:
         if username == 'Hijacker555':
             await bot.send_message(chat_id=message.chat.id,
-                                   text=(get_all_users(connection)))
+                                   text=get_all_users(connection))
             logger.info("User '%s' pressed Users button", username)
         else:
             await bot.send_message(chat_id=message.chat.id,
