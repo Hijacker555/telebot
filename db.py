@@ -57,9 +57,7 @@ def check_user(conn, username):
         with conn.cursor() as cursor:
             cursor.execute(select_query, (username,))
             result = cursor.fetchone()[0]
-            if result:
-                return True
-            else:
-                return False
+            return bool(result)
     except psycopg2.Error as ex:
         print("Ошибка при проверке наличия пользователя в базе данных:", ex)
+        return False
