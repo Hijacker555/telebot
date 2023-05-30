@@ -4,25 +4,12 @@ import tracemalloc
 import asyncio
 import aiohttp
 import openai
+import requests
+import subprocess
+from config import *
 from telebot import types
 from telebot.async_telebot import AsyncTeleBot
 
-
-def read_file(file):
-    """ Read file """
-    with open(file, "r", encoding="UTF-8") as file1:
-        for line in file1:
-            return line.strip()
-
-
-# Authorized users
-AUTHORIZED_USERS = ["hijacker555", "PadreAlexey", "Asmot00"]
-
-# API Keys
-TELEGRAMBOT_API_KEY = read_file("telebotapi.txt")
-OPENAI_API_KEY = read_file("openapi.txt")
-YANDEX_API_KEY = read_file("yandexweatherapi.txt")
-YANDEX_API_URL = 'https://api.weather.yandex.ru/v2/forecast'
 
 bot = AsyncTeleBot(TELEGRAMBOT_API_KEY)
 
@@ -62,15 +49,28 @@ async def start(message):
         logger.warning("Unauthorized access attempt by user '%s'.", username)
 
 
-@bot.message_handler(func=lambda message: message.text == "chatGPT")
-async def openai_handler(message):
-    """ chatGPT button handler """
+@bot.message_handler(func=lambda message: message.text == "Your IP")
+async def yourip_handler(message):
+    """ yourIP button handler """
+    # Получение текущего IP-адреса с помощью команды curl
+    ip_command = "curl -s https://api.ipify.org"
+    ip_address = None
+
+    try:
+        result = subprocess.run(
+            ip_command, capture_output=True, text=True, shell=True)
+        ip_address = result.stdout.strip()
+        
+    except subprocess.CalledProcessError as e:
+        logging.error(
+            "Ошибка при получении IP-адреса: %s", e)
+                
     username = message.from_user.username
     if username in AUTHORIZED_USERS:
         await bot.send_message(chat_id=message.chat.id,
-                               text="chatGPT button pressed")
-        logger.info("User '%s' pressed chatGPT button", username)
-        # Add your OpenAI logic here
+                               text=("Your IP: ", ip_address))
+        logger.info("User '%s' pressed Your IP button", username)
+        # Add your yourIP logic here
     else:
         await bot.send_message(chat_id=message.chat.id,
                                text="Sorry, you are not authorized to use this bot.")
@@ -156,9 +156,9 @@ async def reply(message):
 def create_menu():
     """ Create menu with buttons """
     markup = types.ReplyKeyboardMarkup(row_width=2)
-    openai_button = types.KeyboardButton("chatGPT")
+    yourip_button = types.KeyboardButton("Your IP")
     openweather_button = types.KeyboardButton("YandexWeather")
-    menu_buttons = [openai_button, openweather_button]
+    menu_buttons = [yourip_button, openweather_button]
     markup.add(*menu_buttons)
     return markup
 
