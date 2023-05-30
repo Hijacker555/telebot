@@ -75,4 +75,3 @@ def get_all_users(conn):
     except psycopg2.Error as ex:
         print("Ошибка при получении authorized_users из базы данных:", ex)
         return None
-
