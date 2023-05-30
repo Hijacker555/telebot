@@ -1,11 +1,10 @@
 """ Telegram Bot Open AI """
 import logging
 import tracemalloc
+import subprocess
 import asyncio
 import aiohttp
 import openai
-import requests
-import subprocess
 from config import *
 from telebot import types
 from telebot.async_telebot import AsyncTeleBot
@@ -58,13 +57,13 @@ async def yourip_handler(message):
 
     try:
         result = subprocess.run(
-            ip_command, capture_output=True, text=True, shell=True)
+            ip_command, capture_output=True, text=True, shell=True, check=True)
         ip_address = result.stdout.strip()
-        
-    except subprocess.CalledProcessError as e:
+
+    except subprocess.CalledProcessError as ex:
         logging.error(
-            "Ошибка при получении IP-адреса: %s", e)
-                
+            "Ошибка при получении IP-адреса: %s", ex)
+
     username = message.from_user.username
     if username in AUTHORIZED_USERS:
         await bot.send_message(chat_id=message.chat.id,

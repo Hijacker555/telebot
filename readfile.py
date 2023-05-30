@@ -1,3 +1,4 @@
+""" Read file """
 def read_file(file):
     """ Read file """
     with open(file, "r", encoding="UTF-8") as file1:
