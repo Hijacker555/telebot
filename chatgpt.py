@@ -9,7 +9,8 @@ from config import (TELEGRAMBOT_API_KEY, YANDEX_API_KEY,
                     YANDEX_API_URL, OPENAI_API_KEY)
 from telebot import types
 from telebot.async_telebot import AsyncTeleBot
-from db import *
+from db import (connect_to_database, add_user, check_user,
+                create_table)
 
 
 bot = AsyncTeleBot(TELEGRAMBOT_API_KEY)
@@ -40,18 +41,20 @@ async def start(message):
     username = message.from_user.username
     connection = connect_to_database()
     if connection:
-        create_table(connection, username)
+        create_table(connection)
         if check_user(connection, username):
             markup = create_menu()
             await bot.send_message(chat_id=message.chat.id,
-                                   text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                                   text=
+                                   "Hi, I'm a bot powered by chatGPT. How can I help you today?",
                                    reply_markup=markup)
             logger.info("User '%s' authorized and started the bot.", username)
         else:
             add_user(connection, username)
             markup = create_menu()
             await bot.send_message(chat_id=message.chat.id,
-                                   text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                                   text=
+                                   "Hi, I'm a bot powered by chatGPT. How can I help you today?",
                                    reply_markup=markup)
             logger.warning(
                 "Unauthorized access attempt by user '%s'.", username)
@@ -76,7 +79,7 @@ async def yourip_handler(message):
     username = message.from_user.username
     connection = connect_to_database()
     if connection:
-        create_table(connection, username)
+        create_table(connection)
         if check_user(connection, username):
             await bot.send_message(chat_id=message.chat.id,
                                    text=("Your IP: ", ip_address))
@@ -97,7 +100,7 @@ async def openweather_handler(message):
     username = message.from_user.username
     connection = connect_to_database()
     if connection:
-        create_table(connection, username)
+        create_table(connection)
         if check_user(connection, username):
             await bot.send_message(chat_id=message.chat.id,
                                    text="OpenWeather button pressed")
@@ -150,7 +153,7 @@ async def reply(message):
     username = message.from_user.username
     connection = connect_to_database()
     if connection:
-        create_table(connection, username)
+        create_table(connection)
         if check_user(connection, username):
             request = message.text
             logger.info("Received message from '%s': %s", username, request)
