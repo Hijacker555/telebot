@@ -73,5 +73,5 @@ def get_all_users(conn):
             users = [row[0] for row in results]
             return '\n'.join(users)
     except psycopg2.Error as ex:
-        print("Ошибка при получении authorized_users из базы данных:", ex)
-        return None
+        error_message = "Ошибка при получении authorized_users из базы данных: {}".format(ex)
+        return error_message
