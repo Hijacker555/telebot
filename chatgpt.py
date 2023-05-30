@@ -64,7 +64,6 @@ async def users_handler(message):
     username = message.from_user.username
     connection = connect_to_database()
     if connection:
-        create_table(connection)
         if username == 'hijacker555':
             await bot.send_message(chat_id=message.chat.id,
                                    text=get_all_users(connection))
