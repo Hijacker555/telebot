@@ -5,10 +5,11 @@ import subprocess
 import asyncio
 import aiohttp
 import openai
-from config import (TELEGRAMBOT_API_KEY, AUTHORIZED_USERS,
-                    YANDEX_API_KEY, YANDEX_API_URL, OPENAI_API_KEY)
+from config import (TELEGRAMBOT_API_KEY, YANDEX_API_KEY,
+                    YANDEX_API_URL, OPENAI_API_KEY)
 from telebot import types
 from telebot.async_telebot import AsyncTeleBot
+from db import *
 
 
 bot = AsyncTeleBot(TELEGRAMBOT_API_KEY)
@@ -37,16 +38,24 @@ logger.addHandler(file_handler)
 async def start(message):
     """ Start """
     username = message.from_user.username
-    if username in AUTHORIZED_USERS:
-        markup = create_menu()
-        await bot.send_message(chat_id=message.chat.id,
-                               text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
-                               reply_markup=markup)
-        logger.info("User '%s' authorized and started the bot.", username)
-    else:
-        await bot.send_message(chat_id=message.chat.id,
-                               text="Sorry, you are not authorized to use this bot.")
-        logger.warning("Unauthorized access attempt by user '%s'.", username)
+    connection = connect_to_database()
+    if connection:
+        create_table(connection, username)
+        if check_user(connection, username):
+            markup = create_menu()
+            await bot.send_message(chat_id=message.chat.id,
+                                   text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                                   reply_markup=markup)
+            logger.info("User '%s' authorized and started the bot.", username)
+        else:
+            add_user(connection, username)
+            markup = create_menu()
+            await bot.send_message(chat_id=message.chat.id,
+                                   text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                                   reply_markup=markup)
+            logger.warning(
+                "Unauthorized access attempt by user '%s'.", username)
+        connection.close()
 
 
 @bot.message_handler(func=lambda message: message.text == "Your IP")
@@ -55,7 +64,6 @@ async def yourip_handler(message):
     # Получение текущего IP-адреса с помощью команды curl
     ip_command = "curl -s https://api.ipify.org"
     ip_address = None
-
     try:
         result = subprocess.run(
             ip_command, capture_output=True, text=True, shell=True, check=True)
@@ -66,30 +74,42 @@ async def yourip_handler(message):
             "Ошибка при получении IP-адреса: %s", ex)
 
     username = message.from_user.username
-    if username in AUTHORIZED_USERS:
-        await bot.send_message(chat_id=message.chat.id,
-                               text=("Your IP: ", ip_address))
-        logger.info("User '%s' pressed Your IP button", username)
-        # Add your yourIP logic here
-    else:
-        await bot.send_message(chat_id=message.chat.id,
-                               text="Sorry, you are not authorized to use this bot.")
-        logger.warning("Unauthorized access attempt by user '%s'.", username)
+    connection = connect_to_database()
+    if connection:
+        create_table(connection, username)
+        if check_user(connection, username):
+            await bot.send_message(chat_id=message.chat.id,
+                                   text=("Your IP: ", ip_address))
+            logger.info("User '%s' pressed Your IP button", username)
+            # Add your yourIP logic here
+        else:
+            add_user(connection, username)
+            await bot.send_message(chat_id=message.chat.id,
+                                   text=("Your IP: ", ip_address))
+            logger.warning(
+                "Unauthorized access attempt by user '%s'.", username)
+        connection.close()
 
 
 @bot.message_handler(func=lambda message: message.text == "YandexWeather")
 async def openweather_handler(message):
     """ OpenWeather button handler """
     username = message.from_user.username
-    if username in AUTHORIZED_USERS:
-        await bot.send_message(chat_id=message.chat.id,
-                               text="OpenWeather button pressed")
-        logger.info("User '%s' pressed OpenWeather button", username)
-        await weather_handler(message)
-    else:
-        await bot.send_message(chat_id=message.chat.id,
-                               text="Sorry, you are not authorized to use this bot.")
-        logger.warning("Unauthorized access attempt by user '%s'.", username)
+    connection = connect_to_database()
+    if connection:
+        create_table(connection, username)
+        if check_user(connection, username):
+            await bot.send_message(chat_id=message.chat.id,
+                                   text="OpenWeather button pressed")
+            logger.info("User '%s' pressed OpenWeather button", username)
+            await weather_handler(message)
+        else:
+            add_user(connection, username)
+            await bot.send_message(chat_id=message.chat.id,
+                                   text="OpenWeather button pressed")
+            logger.warning(
+                "Unauthorized access attempt by user '%s'.", username)
+        connection.close()
 
 
 async def weather_handler(message):
@@ -128,29 +148,49 @@ async def weather_handler(message):
 async def reply(message):
     """ Request """
     username = message.from_user.username
-    if username in AUTHORIZED_USERS:
-        request = message.text
-        logger.info("Received message from '%s': %s", username, request)
+    connection = connect_to_database()
+    if connection:
+        create_table(connection, username)
+        if check_user(connection, username):
+            request = message.text
+            logger.info("Received message from '%s': %s", username, request)
+            try:
+                response = openai.Completion.create(
+                    engine="text-davinci-003",
+                    prompt="You: " + request + "\nBot: ",
+                    max_tokens=1024,
+                    n=1,
+                    stop=None,
+                    temperature=0.5,
+                ).get("choices")[0].text
 
-        try:
-            response = openai.Completion.create(
-                engine="text-davinci-003",
-                prompt="You: " + request + "\nBot: ",
-                max_tokens=1024,
-                n=1,
-                stop=None,
-                temperature=0.5,
-            ).get("choices")[0].text
+                await bot.send_message(chat_id=message.chat.id, text=response)
+                logger.info("Sent response to '%s': %s", username, response)
+            except openai.OpenAIError as ex:
+                logger.error(
+                    "Error processing message from '%s': %s", username, ex)
+        else:
+            add_user(connection, username)
+            request = message.text
+            logger.info("Received message from '%s': %s", username, request)
+            try:
+                response = openai.Completion.create(
+                    engine="text-davinci-003",
+                    prompt="You: " + request + "\nBot: ",
+                    max_tokens=1024,
+                    n=1,
+                    stop=None,
+                    temperature=0.5,
+                ).get("choices")[0].text
 
-            await bot.send_message(chat_id=message.chat.id, text=response)
-            logger.info("Sent response to '%s': %s", username, response)
-        except openai.OpenAIError as ex:
-            logger.error(
-                "Error processing message from '%s': %s", username, ex)
-    else:
-        await bot.send_message(chat_id=message.chat.id,
-                               text="Sorry, you are not authorized to use this bot.")
-        logger.warning("Unauthorized access attempt by user '%s'.", username)
+                await bot.send_message(chat_id=message.chat.id, text=response)
+                logger.info("Sent response to '%s': %s", username, response)
+            except openai.OpenAIError as ex:
+                logger.error(
+                    "Error processing message from '%s': %s", username, ex)
+            logger.warning(
+                "Unauthorized access attempt by user '%s'.", username)
+        connection.close()
 
 
 def create_menu():
