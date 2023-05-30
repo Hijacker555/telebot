@@ -5,7 +5,7 @@ import subprocess
 import asyncio
 import aiohttp
 import openai
-from config import (TELEGRAMBOT_API_KEY, AUTHORIZED_USERS, 
+from config import (TELEGRAMBOT_API_KEY, AUTHORIZED_USERS,
                     YANDEX_API_KEY, YANDEX_API_URL, OPENAI_API_KEY)
 from telebot import types
 from telebot.async_telebot import AsyncTeleBot
