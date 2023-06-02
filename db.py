@@ -71,7 +71,8 @@ def get_all_users(conn):
             cursor.execute(select_query)
             results = cursor.fetchall()
             users = [row[0] for row in results]
-            return '\n'.join(users)
+            list_users = '\n'.join(users)
+            return list_users
     except psycopg2.Error as ex:
         error_message = "Ошибка при получении authorized_users из базы данных: %s", ex
         return error_message
