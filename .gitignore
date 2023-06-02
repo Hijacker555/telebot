@@ -2,3 +2,6 @@ openapi.txt
 telebotapi.txt
 bot.log
 yandexweatherapi.txt
+__pycache__/config.cpython-310.pyc
+__pycache__/db.cpython-310.pyc
+__pycache__/readfile.cpython-310.pyc

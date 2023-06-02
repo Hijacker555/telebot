@@ -40,7 +40,6 @@ async def start(message):
     username = message.from_user.username
     connection = connect_to_database()
     if connection:
-        create_table(connection)
         if check_user(connection, username):
             markup = create_menu()
             await bot.send_message(chat_id=message.chat.id,
@@ -64,7 +63,6 @@ async def users_handler(message):
     username = message.from_user.username
     connection = connect_to_database()
     if connection:
-        create_table(connection)
         users_list = get_all_users(connection)
         if username == 'hijacker555':
             await bot.send_message(chat_id=message.chat.id,
@@ -84,7 +82,6 @@ async def openweather_handler(message):
     username = message.from_user.username
     connection = connect_to_database()
     if connection:
-        create_table(connection)
         if check_user(connection, username):
             await bot.send_message(chat_id=message.chat.id,
                                    text="OpenWeather button pressed")
@@ -137,7 +134,6 @@ async def reply(message):
     username = message.from_user.username
     connection = connect_to_database()
     if connection:
-        create_table(connection)
         if check_user(connection, username):
             request = message.text
             logger.info("Received message from '%s': %s", username, request)
@@ -190,7 +186,15 @@ def create_menu():
     return markup
 
 
+def add_db_table():
+    """ Создаем таблицу в БД """
+    connection = connect_to_database()
+    if connection:
+        create_table(connection)
+        connection.close()
+
 if __name__ == '__main__':
+    add_db_table()
     tracemalloc.start()
     openai.api_key = OPENAI_API_KEY
     logger.info("Bot started")
