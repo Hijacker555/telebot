@@ -1,0 +1,6 @@
+logging
+tracemalloc
+asyncio
+aiohttp
+openai
+telebot
