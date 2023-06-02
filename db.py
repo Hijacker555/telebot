@@ -70,7 +70,7 @@ def get_all_users(conn):
         with conn.cursor() as cursor:
             cursor.execute(select_query)
             results = cursor.fetchall()
-            users = [row[0] if row[0] is not None else '' for row in results]
+            users = [row[0] if row[0] is not None else 'None' for row in results]
             return '\n'.join(users)
     except psycopg2.Error as ex:
         error_message = "Ошибка при получении authorized_users из базы данных: %s", ex
