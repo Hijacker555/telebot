@@ -43,15 +43,15 @@ async def start(message):
         if check_user(connection, username):
             markup = create_menu()
             await bot.send_message(chat_id=message.chat.id,
-                                   text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
-                                   reply_markup=markup)
+                        text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                        reply_markup=markup)
             logger.info("User '%s' authorized and started the bot.", username)
         else:
             add_user(connection, username)
             markup = create_menu()
             await bot.send_message(chat_id=message.chat.id,
-                                   text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
-                                   reply_markup=markup)
+                        text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                        reply_markup=markup)
             logger.warning(
                 "Unauthorized access attempt by user '%s'.", username)
         connection.close()
