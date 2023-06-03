@@ -1,16 +1,19 @@
+""" Unit tests """
 import unittest
 from unittest.mock import patch, MagicMock
-from chatgpt import start, users_handler, openweather_handler, reply, create_menu, add_db_table, weather_handler
-
+from chatgpt import (start, users_handler, openweather_handler, reply,
+                     create_menu, add_db_table, weather_handler)
 
 
 class TestBot(unittest.TestCase):
+    """ TestBot """
 
     def setUp(self):
         self.bot = MagicMock()
 
     @patch('your_module.connect_to_database')
     def test_start_authorized_user(self, mock_connect_to_database):
+        """ Test start authorized users """
         mock_connection = MagicMock()
         mock_connect_to_database.return_value = mock_connection
         mock_check_user = MagicMock(return_value=True)
@@ -30,13 +33,14 @@ class TestBot(unittest.TestCase):
             mock_connection, self.bot.message.from_user.username)
         mock_create_menu.assert_called_once()
         mock_send_message.assert_called_once_with(chat_id=self.bot.message.chat.id,
-                                                  text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
-                                                  reply_markup='mock_menu')
+                        text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                        reply_markup='mock_menu')
         self.assertFalse(mock_add_user.called)
         mock_connection.close.assert_called_once()
 
     @patch('your_module.connect_to_database')
     def test_start_unauthorized_user(self, mock_connect_to_database):
+        """ Test strat unauthirized users """
         mock_connection = MagicMock()
         mock_connect_to_database.return_value = mock_connection
         mock_check_user = MagicMock(return_value=False)
@@ -56,14 +60,15 @@ class TestBot(unittest.TestCase):
             mock_connection, self.bot.message.from_user.username)
         mock_create_menu.assert_called_once()
         mock_send_message.assert_called_once_with(chat_id=self.bot.message.chat.id,
-                                                  text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
-                                                  reply_markup='mock_menu')
+                            text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                            reply_markup='mock_menu')
         mock_add_user.assert_called_once_with(
             mock_connection, self.bot.message.from_user.username)
         mock_connection.close.assert_called_once()
 
     @patch('your_module.connect_to_database')
     def test_users_handler_authorized_user(self, mock_connect_to_database):
+        """ Test users handler authorized user """
         mock_connection = MagicMock()
         mock_connect_to_database.return_value = mock_connection
         mock_get_all_users = MagicMock(return_value='mock_users')
@@ -84,6 +89,7 @@ class TestBot(unittest.TestCase):
 
     @patch('your_module.connect_to_database')
     def test_users_handler_unauthorized_user(self, mock_connect_to_database):
+        """ Test users handler unauthorized user """
         mock_connection = MagicMock()
         mock_connect_to_database.return_value = mock_connection
         mock_get_all_users = MagicMock()
@@ -99,12 +105,13 @@ class TestBot(unittest.TestCase):
         mock_connect_to_database.assert_called_once()
         self.assertFalse(mock_get_all_users.called)
         mock_send_message.assert_called_once_with(chat_id=self.bot.message.chat.id,
-                                                  text="Sorry, you are not authorized to use this button.")
+                                text="Sorry, you are not authorized to use this button.")
         mock_connection.close.assert_called_once()
 
 
 @patch('your_module.connect_to_database')
 def test_openweather_handler_authorized_user(self, mock_connect_to_database):
+    """ Test openweather handler authorized user """
     mock_connection = MagicMock()
     mock_connect_to_database.return_value = mock_connection
     mock_check_user = MagicMock(return_value=True)
@@ -151,9 +158,11 @@ def test_openweather_handler_authorized_user(self, mock_connect_to_database):
             mock_connection, self.bot.message.from_user.username)
         mock_connection.close.assert_called_once()
 
+
 @patch('your_module.aiohttp.ClientSession')
 @patch('your_module.connect_to_database')
 async def test_weather_handler_success(self, mock_connect_to_database, mock_client_session):
+    """ Test weather handler succes """
     mock_connection = MagicMock()
     mock_connect_to_database.return_value = mock_connection
     mock_send_message = MagicMock()
@@ -188,10 +197,10 @@ async def test_weather_handler_success(self, mock_connect_to_database, mock_clie
     mock_connection.close.assert_called_once()
 
 
-
 @patch('your_module.aiohttp.ClientSession')
 @patch('your_module.connect_to_database')
 async def test_weather_handler_no_data(self, mock_connect_to_database, mock_client_session):
+    """ Test weather handler no data """
     mock_connection = MagicMock()
     mock_connect_to_database.return_value = mock_connection
     mock_send_message = MagicMock()
@@ -218,9 +227,6 @@ async def test_weather_handler_no_data(self, mock_connect_to_database, mock_clie
     )
     self.assertFalse(mock_send_message.called)
     mock_connection.close.assert_called_once()
-
-
-
 
     @patch('your_module.openai.Completion.create')
     @patch('your_module.connect_to_database')
