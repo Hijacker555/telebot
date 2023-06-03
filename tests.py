@@ -2,7 +2,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from chatgpt import (start, users_handler, openweather_handler, reply,
-                     create_menu, add_db_table, weather_handler)
+                     add_db_table, weather_handler)
 
 
 class TestBot(unittest.TestCase):
