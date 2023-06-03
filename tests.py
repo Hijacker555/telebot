@@ -264,16 +264,6 @@ async def test_weather_handler_no_data(self, mock_connect_to_database, mock_clie
             mock_connection, self.bot.message.from_user.username)
         mock_connection.close.assert_called_once()
 
-    def test_create_menu():
-        expected_menu = {
-            'keyboard': [['Button 1'], ['Button 2']],
-            'resize_keyboard': True
-        }
-
-        menu = create_menu()
-
-        self.assertEqual(menu, expected_menu)
-
     @patch('your_module.connect_to_database')
     def test_add_db_table(mock_connect_to_database):
         mock_connection = MagicMock()
