@@ -1,5 +1,8 @@
+os
 logging
+tracemalloc
 asyncio
 aiohttp
 openai
 telebot
+psycopg2

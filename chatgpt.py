@@ -1,18 +1,18 @@
 """ Telegram Bot Open AI """
+import os
 import logging
 import tracemalloc
 import asyncio
 import aiohttp
 import openai
-from config import (TELEGRAMBOT_API_KEY, YANDEX_API_KEY,
-                    YANDEX_API_URL, OPENAI_API_KEY)
+from config import (YANDEX_API_URL)
 from telebot import types
 from telebot.async_telebot import AsyncTeleBot
 from db import (connect_to_database, add_user, check_user,
                 create_table, get_all_users)
 
 
-bot = AsyncTeleBot(TELEGRAMBOT_API_KEY)
+bot = AsyncTeleBot(os.environ["TELEGRAMBOT_API_KEY"])
 
 # Configure logging
 logging.basicConfig(
@@ -100,7 +100,7 @@ async def weather_handler(message):
     """ Weather handler """
     try:
         async with aiohttp.ClientSession() as session:
-            headers = {'X-Yandex-API-Key': YANDEX_API_KEY}
+            headers = {'X-Yandex-API-Key': os.environ["YANDEX_API_KEY"]}
             params = {
                 'lat': 59.835812,
                 'lon': 30.149159,
@@ -197,6 +197,6 @@ def add_db_table():
 if __name__ == '__main__':
     add_db_table()
     tracemalloc.start()
-    openai.api_key = OPENAI_API_KEY
+    openai.api_key = os.environ["OPENAI_API_KEY"]
     logger.info("Bot started")
     asyncio.run(bot.polling())
