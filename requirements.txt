@@ -3,3 +3,4 @@ asyncio
 aiohttp
 openai
 telebot
+psycopg2
