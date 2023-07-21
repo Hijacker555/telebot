@@ -3,16 +3,14 @@ import os
 import logging
 import tracemalloc
 import asyncio
-import aiohttp
 import openai
-from config import (YANDEX_API_URL)
 from telebot import types
 from telebot.async_telebot import AsyncTeleBot
 from db import (connect_to_database, add_user, check_user,
                 create_table, get_all_users)
 
 
-bot = AsyncTeleBot(os.environ["TELEGRAMBOT_API_KEY"])
+bot = AsyncTeleBot(os.environ.get("TELEGRAMBOT_API_KEY"))
 
 # Configure logging
 logging.basicConfig(
@@ -75,57 +73,6 @@ async def users_handler(message):
                 "Unauthorized access attempt by user '%s'.", username)
         connection.close()
 
-
-@bot.message_handler(func=lambda message: message.text == "YandexWeather")
-async def openweather_handler(message):
-    """ OpenWeather button handler """
-    username = message.from_user.username
-    connection = connect_to_database()
-    if connection:
-        if check_user(connection, username):
-            await bot.send_message(chat_id=message.chat.id,
-                                   text="OpenWeather button pressed")
-            logger.info("User '%s' pressed OpenWeather button", username)
-            await weather_handler(message)
-        else:
-            add_user(connection, username)
-            await bot.send_message(chat_id=message.chat.id,
-                                   text="OpenWeather button pressed")
-            logger.warning(
-                "Unauthorized access attempt by user '%s'.", username)
-        connection.close()
-
-
-async def weather_handler(message):
-    """ Weather handler """
-    try:
-        async with aiohttp.ClientSession() as session:
-            headers = {'X-Yandex-API-Key': os.environ["YANDEX_API_KEY"]}
-            params = {
-                'lat': 59.835812,
-                'lon': 30.149159,
-                'lang': 'ru'
-            }
-            async with session.get(YANDEX_API_URL, headers=headers, params=params) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    fact = data.get('fact')
-                    if fact:
-                        temperature = fact.get('temp')
-                        weather_description = fact.get('condition')
-                        weather_info = f"Temperature: {temperature}°C\n {weather_description}"
-                        await bot.reply_to(message, weather_info)
-                        logger.info(
-                            "Weather information sent to user: %s", weather_info)
-                    else:
-                        logger.warning(
-                            "No weather information found in the API response")
-                else:
-                    logger.error(
-                        "Failed to retrieve weather information. Status code: %d", response.status)
-    except aiohttp.ClientError as ex:
-        logger.error(
-            "An error occurred while processing the message: %s", str(ex))
 
 
 @bot.message_handler(content_types=['text'])
@@ -197,6 +144,6 @@ def add_db_table():
 if __name__ == '__main__':
     add_db_table()
     tracemalloc.start()
-    openai.api_key = os.environ["OPENAI_API_KEY"]
+    openai.api_key = os.environ.get("OPENAI_API_KEY")
     logger.info("Bot started")
     asyncio.run(bot.polling())
