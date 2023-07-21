@@ -1,7 +1,11 @@
 """ PostgreSQL """
 import psycopg2
-from config import (DB_HOST, DB_DATABASE,
-                    DB_USER, DB_PASS)
+
+
+DB_HOST = "212.86.108.148"
+DB_DATABASE = "telebot"
+DB_USER = "myuser"
+DB_PASS = "mypass"
 
 
 def connect_to_database():
