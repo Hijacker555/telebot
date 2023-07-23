@@ -37,7 +37,8 @@ def create_tables(conn):
     CREATE TABLE IF NOT EXISTS users_messages (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES authorized_users (id),
-        message VARCHAR(255) NOT NULL
+        message VARCHAR(255) NOT NULL,
+        time TIMESTAMP DEFAULT NOW()
     );
     """   
     try:
