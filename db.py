@@ -24,7 +24,7 @@ def connect_to_database():
         return None
 
 
-def create_table(conn):
+def create_tables(conn):
     """Создание таблицы authorized_users"""
     create_table_query = """
     CREATE TABLE IF NOT EXISTS authorized_users (
@@ -32,39 +32,49 @@ def create_table(conn):
         username VARCHAR(255) UNIQUE
     );
     """
+
+    create_messages_table_query = """
+    CREATE TABLE IF NOT EXISTS users_messages (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES authorized_users (id),
+        message VARCHAR(255) NOT NULL
+    );
+    """   
     try:
         with conn.cursor() as cursor:
             cursor.execute(create_table_query)
+            cursor.execute(create_messages_table_query)
         conn.commit()
-        print("Таблица authorized_users создана")
+        print("Таблицы 'authorized_users' и 'users_messages' созданы")
     except psycopg2.Error as ex:
-        print("Ошибка при создании таблицы authorized_users:", ex)
+        print("Ошибка при создании таблиц:", ex)
 
 
-def add_user(conn, username):
-    """Добавление пользователя в базу данных"""
-    insert_query = "INSERT INTO authorized_users (username) VALUES (%s);"
+def add_user(connection, username):
+    # Code to add the user to the 'authorized_users' table
     try:
-        with conn.cursor() as cursor:
-            cursor.execute(insert_query, (username,))
-        conn.commit()
-        print(
-            f"Пользователь {username} добавлен в базу данных")
+        with connection.cursor() as cursor:
+            cursor.execute("INSERT INTO authorized_users (username) VALUES (%s) RETURNING id", (username,))
+            user_id = cursor.fetchone()[0]
+        connection.commit()
+        return user_id
     except psycopg2.Error as ex:
         print("Ошибка при добавлении пользователя в базу данных:", ex)
 
 
-def check_user(conn, username):
-    """Проверка наличия пользователя в базе данных"""
-    select_query = "SELECT EXISTS(SELECT 1 FROM authorized_users WHERE username = %s);"
+def check_user(connection, username):
+    """Check if a user exists in the database and return user_id if found"""
     try:
-        with conn.cursor() as cursor:
-            cursor.execute(select_query, (username,))
-            result = cursor.fetchone()[0]
-            return bool(result)
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id FROM authorized_users WHERE username = %s", (username,))
+            user_id = cursor.fetchone()
+            if user_id:
+                return True, user_id[0]  # Return a tuple with the boolean and user_id
+            else:
+                return False, None  # Return False and None if user is not found
     except psycopg2.Error as ex:
-        print("Ошибка при проверке наличия пользователя в базе данных:", ex)
-        return False
+        print("Ошибка при проверке пользователя в базе данных:", ex)
+        return False, None  # Return False and None in case of an error
 
 
 def get_all_users(conn):
@@ -80,3 +90,14 @@ def get_all_users(conn):
     except psycopg2.Error as ex:
         error_message = "Ошибка при получении authorized_users из базы данных: %s", ex
         return error_message
+
+
+
+def add_message_to_db(connection, user_id, message):
+    # Code to add the message to the 'messages' table with a reference to the user in 'authorized_users' table
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("INSERT INTO users_messages (user_id, message) VALUES (%s, %s)", (user_id, message))
+        connection.commit()
+    except psycopg2.Error as ex:
+        print("Ошибка при добавлении сообщения в базу данных:", ex)

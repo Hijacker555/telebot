@@ -11,8 +11,7 @@ import speech_recognition as sr
 from pydub import AudioSegment
 from io import BytesIO
 from db import (connect_to_database, add_user, check_user,
-                create_table, get_all_users)
-
+                create_tables, get_all_users, add_message_to_db)
 
 # Set API keys and other configurations
 TELEGRAMBOT_API_KEY = os.environ.get("TELEGRAMBOT_API_KEY")
@@ -56,46 +55,53 @@ def setup_handlers():
         username = message.from_user.username
         connection = connect_to_database()
         if connection:
-            # Create database table
-            create_table(connection)
+            # Create database tables
+            create_tables(connection)
 
-            if check_user(connection, username):
+            user_exists, user_id = check_user(connection, username)
+            if user_exists:
                 await bot.send_message(chat_id=message.chat.id,
-                                       text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
-                                       reply_markup=markup)
+                                    text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                                    reply_markup=markup)
                 logger.info("User '%s' authorized and started the bot.", username)
+                add_message_to_db(connection, user_id, message.text)
             else:
-                add_user(connection, username)
+                user_id = add_user(connection, username)
                 await bot.send_message(chat_id=message.chat.id,
-                                       text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
-                                       reply_markup=markup)
+                                    text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
+                                    reply_markup=markup)
                 logger.warning("Unauthorized access attempt by user '%s'.", username)
+                add_message_to_db(connection, user_id, message.text)
+
             connection.close()
 
     @bot.message_handler(func=lambda message: message.text == "Button")
     async def users_handler(message):
         """ Users button handler """
-        username = message.from_user.username
         connection = connect_to_database()
         if connection:
+            user_exists, user_id = check_user(connection, message.from_user.username)
             users_list = get_all_users(connection)
-            if username == 'hijacker555':
+            if message.from_user.username == 'hijacker555':
                 await bot.send_message(chat_id=message.chat.id,
                                        text=users_list)
-                logger.info("User '%s' pressed Users button", username)
+                logger.info("User '%s' pressed Users button", message.from_user.username)
+                add_message_to_db(connection, user_id, message.text)
             else:
                 await bot.send_message(chat_id=message.chat.id,
                                        text="Sorry, you are not authorized to use this button.")
-                logger.warning("Unauthorized access attempt by user '%s'.", username)
+                logger.warning("Unauthorized access attempt by user '%s'.", message.from_user.username)
+                add_message_to_db(connection, user_id, message.text)
             connection.close()
 
     @bot.message_handler(content_types=['voice'])
     async def handle_voice_message(message):
         async with get_database_connection() as connection:
-            if check_user(connection, message.from_user.username):
+            user_exists, user_id = check_user(connection, message.from_user.username)
+            if user_exists:
                 logger.info("Received message from '%s': %s", message.from_user.username, message.text)
             else:
-                add_user(connection, message.from_user.username)
+                user_id = add_user(connection, message.from_user.username)
                 logger.info("Received message from '%s': %s", message.from_user.username, message.text)
 
             try:
@@ -113,6 +119,7 @@ def setup_handlers():
                 with sr.AudioFile(wav_data) as source:
                     audio_data = recognizer.record(source)
                     recognized_text = recognizer.recognize_google(audio_data, language='ru-RU')
+                    add_message_to_db(connection, user_id, recognized_text)
 
             except Exception as e:
                 # Если произошла ошибка, отправляем сообщение с ошибкой
@@ -122,25 +129,31 @@ def setup_handlers():
                 response = await get_openai_response(recognized_text)
                 await bot.send_message(chat_id=message.chat.id, text=response)
                 logger.info("Sent response to '%s': %s", message.from_user.username, response)
+                add_message_to_db(connection, user_id, response)
 
             except openai.OpenAIError as ex:
                 logger.error("Error processing message from '%s': %s", message.from_user.username, ex)
                 logger.warning("Unauthorized access attempt by user '%s'.", message.from_user.username)
 
+
     @bot.message_handler(content_types=['text'])
     async def reply(message):
         """ Request """
         async with get_database_connection() as connection:
-            if check_user(connection, message.from_user.username):
+            user_exists, user_id = check_user(connection, message.from_user.username)
+            if user_exists:
                 logger.info("Received message from '%s': %s", message.from_user.username, message.text)
+                add_message_to_db(connection, user_id, message.text)
             else:
-                add_user(connection, message.from_user.username)
+                user_id = add_user(connection, message.from_user.username)
                 logger.info("Received message from '%s': %s", message.from_user.username, message.text)
+                add_message_to_db(connection, user_id, message.text)
 
             try:
                 response = await get_openai_response(message.text)
                 await bot.send_message(chat_id=message.chat.id, text=response)
                 logger.info("Sent response to '%s': %s", message.from_user.username, response)
+                add_message_to_db(connection, user_id, response)
 
             except openai.OpenAIError as ex:
                 logger.error("Error processing message from '%s': %s", message.from_user.username, ex)
