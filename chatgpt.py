@@ -45,8 +45,8 @@ logger.addHandler(file_handler)
 openai.api_key = OPENAI_API_KEY
 
 # Create menu
-markup = types.ReplyKeyboardMarkup(row_width=2)
-users_button = types.KeyboardButton("Button")
+markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+users_button = types.KeyboardButton("🥷 Button")
 menu_buttons = [users_button]
 markup.add(*menu_buttons)
 
@@ -77,7 +77,7 @@ def setup_handlers():
 
             connection.close()
 
-    @bot.message_handler(func=lambda message: message.text == "Button")
+    @bot.message_handler(func=lambda message: message.text == "🥷 Button")
     async def users_handler(message):
         """ Users button handler """
         connection = connect_to_database()
