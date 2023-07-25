@@ -121,6 +121,7 @@ def setup_handlers():
                 recognized_text = pytesseract.image_to_string(img)
 
                 logger.info("Sent OCR response to '%s': %s", message.from_user.username, recognized_text)
+                add_message_to_db(connection, user_id, recognized_text)
 
             except Exception as e:
                 # If an error occurs, send an error message
