@@ -8,6 +8,8 @@ from telebot import types
 from telebot.async_telebot import AsyncTeleBot
 from contextlib import asynccontextmanager
 import speech_recognition as sr
+import pytesseract
+from PIL import Image
 from pydub import AudioSegment
 from io import BytesIO
 from db import (connect_to_database, add_user, check_user,
@@ -93,6 +95,46 @@ def setup_handlers():
                 logger.warning("Unauthorized access attempt by user '%s'.", message.from_user.username)
                 add_message_to_db(connection, user_id, message.text)
             connection.close()
+
+    @bot.message_handler(content_types=['photo'])
+    async def handle_photo_message(message):
+        async with get_database_connection() as connection:
+            user_exists, user_id = check_user(connection, message.from_user.username)
+            if user_exists:
+                logger.info("Received message from '%s': %s", message.from_user.username, message.text)
+            else:
+                user_id = add_user(connection, message.from_user.username)
+                logger.info("Received message from '%s': %s", message.from_user.username, message.text)
+
+            try:
+                # Get the photo file_id
+                photo_file_id = message.photo[-1].file_id
+
+                # Download the photo
+                file_info = await bot.get_file(photo_file_id)
+                file_data = await bot.download_file(file_info.file_path)
+
+                # Create a PIL Image object
+                img = Image.open(BytesIO(file_data))
+
+                # Perform OCR on the image to recognize text
+                recognized_text = pytesseract.image_to_string(img)
+
+                logger.info("Sent OCR response to '%s': %s", message.from_user.username, recognized_text)
+
+            except Exception as e:
+                # If an error occurs, send an error message
+                await bot.reply_to(message, f"Error processing image: {e}")
+
+            try:
+                response = await get_openai_response(recognized_text)
+                await bot.send_message(chat_id=message.chat.id, text=response)
+                logger.info("Sent response to '%s': %s", message.from_user.username, response)
+                add_message_to_db(connection, user_id, response)
+
+            except openai.OpenAIError as ex:
+                logger.error("Error processing message from '%s': %s", message.from_user.username, ex)
+                logger.warning("Unauthorized access attempt by user '%s'.", message.from_user.username)
 
     @bot.message_handler(content_types=['voice'])
     async def handle_voice_message(message):
