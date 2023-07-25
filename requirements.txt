@@ -4,3 +4,10 @@ aiohttp
 openai
 telebot
 psycopg2
+tracemalloc
+contextlib
+speechrecognition
+pytesseract
+PIL
+pydub
+io
