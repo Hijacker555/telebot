@@ -2,7 +2,7 @@
 import psycopg2
 
 
-DB_HOST = "212.86.108.148"
+DB_HOST = "localhost"
 DB_DATABASE = "telebot"
 DB_USER = "myuser"
 DB_PASS = "mypass"
@@ -36,9 +36,10 @@ def create_tables(conn):
     create_messages_table_query = """
     CREATE TABLE IF NOT EXISTS users_messages (
         id SERIAL PRIMARY KEY,
+        time TIMESTAMP DEFAULT NOW(),
         user_id INTEGER REFERENCES authorized_users (id),
-        message TEXT NOT NULL,
-        time TIMESTAMP DEFAULT NOW()
+        request TEXT NOT NULL,
+        response TEXT NOT NULL
     );
     """   
     try:
@@ -94,11 +95,11 @@ def get_all_users(conn):
 
 
 
-def add_message_to_db(connection, user_id, message):
+def add_message_to_db(connection, user_id, request, response):
     # Code to add the message to the 'messages' table with a reference to the user in 'authorized_users' table
     try:
         with connection.cursor() as cursor:
-            cursor.execute("INSERT INTO users_messages (user_id, message) VALUES (%s, %s)", (user_id, message))
+            cursor.execute("INSERT INTO users_messages (user_id, request, response) VALUES (%s, %s, %s)", (user_id, request, response))
         connection.commit()
     except psycopg2.Error as ex:
         print("Ошибка при добавлении сообщения в базу данных:", ex)

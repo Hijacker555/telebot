@@ -66,14 +66,12 @@ def setup_handlers():
                                     text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
                                     reply_markup=markup)
                 logger.info("User '%s' authorized and started the bot.", username)
-                add_message_to_db(connection, user_id, message.text)
             else:
                 user_id = add_user(connection, username)
                 await bot.send_message(chat_id=message.chat.id,
                                     text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
                                     reply_markup=markup)
                 logger.warning("Unauthorized access attempt by user '%s'.", username)
-                add_message_to_db(connection, user_id, message.text)
 
             connection.close()
 
@@ -82,29 +80,21 @@ def setup_handlers():
         """ Users button handler """
         connection = connect_to_database()
         if connection:
-            user_exists, user_id = check_user(connection, message.from_user.username)
             users_list = get_all_users(connection)
             if message.from_user.username == 'hijacker555':
                 await bot.send_message(chat_id=message.chat.id,
                                        text=users_list)
                 logger.info("User '%s' pressed Users button", message.from_user.username)
-                add_message_to_db(connection, user_id, message.text)
             else:
                 await bot.send_message(chat_id=message.chat.id,
                                        text="Sorry, you are not authorized to use this button.")
                 logger.warning("Unauthorized access attempt by user '%s'.", message.from_user.username)
-                add_message_to_db(connection, user_id, message.text)
             connection.close()
 
     @bot.message_handler(content_types=['photo'])
     async def handle_photo_message(message):
         async with get_database_connection() as connection:
             user_exists, user_id = check_user(connection, message.from_user.username)
-            if user_exists:
-                logger.info("Received message from '%s': %s", message.from_user.username, message.text)
-            else:
-                user_id = add_user(connection, message.from_user.username)
-                logger.info("Received message from '%s': %s", message.from_user.username, message.text)
 
             try:
                 # Get the photo file_id
@@ -121,7 +111,6 @@ def setup_handlers():
                 recognized_text = pytesseract.image_to_string(img)
 
                 logger.info("Sent OCR response to '%s': %s", message.from_user.username, recognized_text)
-                add_message_to_db(connection, user_id, recognized_text)
 
             except Exception as e:
                 # If an error occurs, send an error message
@@ -131,7 +120,7 @@ def setup_handlers():
                 response = await get_openai_response(recognized_text)
                 await bot.send_message(chat_id=message.chat.id, text=response)
                 logger.info("Sent response to '%s': %s", message.from_user.username, response)
-                add_message_to_db(connection, user_id, response)
+                add_message_to_db(connection, user_id, recognized_text, response)
 
             except openai.OpenAIError as ex:
                 logger.error("Error processing message from '%s': %s", message.from_user.username, ex)
@@ -141,11 +130,6 @@ def setup_handlers():
     async def handle_voice_message(message):
         async with get_database_connection() as connection:
             user_exists, user_id = check_user(connection, message.from_user.username)
-            if user_exists:
-                logger.info("Received message from '%s': %s", message.from_user.username, message.text)
-            else:
-                user_id = add_user(connection, message.from_user.username)
-                logger.info("Received message from '%s': %s", message.from_user.username, message.text)
 
             try:
                 # Получаем аудиофайл как объект bytes
@@ -162,7 +146,6 @@ def setup_handlers():
                 with sr.AudioFile(wav_data) as source:
                     audio_data = recognizer.record(source)
                     recognized_text = recognizer.recognize_google(audio_data, language='ru-RU')
-                    add_message_to_db(connection, user_id, recognized_text)
 
             except Exception as e:
                 # Если произошла ошибка, отправляем сообщение с ошибкой
@@ -172,7 +155,7 @@ def setup_handlers():
                 response = await get_openai_response(recognized_text)
                 await bot.send_message(chat_id=message.chat.id, text=response)
                 logger.info("Sent response to '%s': %s", message.from_user.username, response)
-                add_message_to_db(connection, user_id, response)
+                add_message_to_db(connection, user_id, recognized_text, response)
 
             except openai.OpenAIError as ex:
                 logger.error("Error processing message from '%s': %s", message.from_user.username, ex)
@@ -184,19 +167,12 @@ def setup_handlers():
         """ Request """
         async with get_database_connection() as connection:
             user_exists, user_id = check_user(connection, message.from_user.username)
-            if user_exists:
-                logger.info("Received message from '%s': %s", message.from_user.username, message.text)
-                add_message_to_db(connection, user_id, message.text)
-            else:
-                user_id = add_user(connection, message.from_user.username)
-                logger.info("Received message from '%s': %s", message.from_user.username, message.text)
-                add_message_to_db(connection, user_id, message.text)
 
             try:
                 response = await get_openai_response(message.text)
                 await bot.send_message(chat_id=message.chat.id, text=response)
                 logger.info("Sent response to '%s': %s", message.from_user.username, response)
-                add_message_to_db(connection, user_id, response)
+                add_message_to_db(connection, user_id, message.text, response)
 
             except openai.OpenAIError as ex:
                 logger.error("Error processing message from '%s': %s", message.from_user.username, ex)
