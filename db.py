@@ -117,3 +117,5 @@ def update_phone_number(connection, user_id, phone_number):
     with connection.cursor() as cursor:
         cursor.execute(update_query, (phone_number, user_id))
     connection.commit()
+
+
