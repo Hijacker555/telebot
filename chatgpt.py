@@ -5,6 +5,7 @@ import tracemalloc
 import asyncio
 import openai
 from telebot import types
+from telebot.types import ReplyKeyboardMarkup, KeyboardButton, Contact
 from telebot.async_telebot import AsyncTeleBot
 from contextlib import asynccontextmanager
 import speech_recognition as sr
@@ -50,133 +51,180 @@ users_button = types.KeyboardButton("🥷 Button")
 menu_buttons = [users_button]
 markup.add(*menu_buttons)
 
+# Create a custom keyboard with the contact button
+custom_keyboard = types.ReplyKeyboardMarkup(
+    resize_keyboard=True, one_time_keyboard=False)
+contact_button = types.KeyboardButton("🕵️ Авторизация", request_contact=True)
+custom_keyboard.add(contact_button)
+
+
 def setup_handlers():
     @bot.message_handler(commands=['start', 'help'])
     async def start(message):
         """ Start or Help """
         username = message.from_user.username
-        connection = connect_to_database()
-        if connection:
-            # Create database tables
+
+        async with get_database_connection() as connection:
             create_tables(connection)
 
-            user_exists, user_id = check_user(connection, username)
+            user_exists, user_id, user_phone = check_user(connection, username)
             if user_exists:
-                await bot.send_message(chat_id=message.chat.id,
-                                    text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
-                                    reply_markup=markup)
-                logger.info("User '%s' authorized and started the bot.", username)
+                await bot.send_message(chat_id=message.chat.id, text="Привет! Чем могу помочь?")
+                logger.info("Пользователь '%s' авторизован.", username)
             else:
-                user_id = add_user(connection, username)
                 await bot.send_message(chat_id=message.chat.id,
-                                    text="Hi, I'm a bot powered by chatGPT. How can I help you today?",
-                                    reply_markup=markup)
-                logger.warning("Unauthorized access attempt by user '%s'.", username)
+                                       text="Пожалуйста нажмите кнопку Авторизация для подтверждения контактных данных",
+                                       reply_markup=custom_keyboard)  # Show the contact button separately
 
-            connection.close()
+    @bot.message_handler(content_types=['contact'])
+    async def handle_contact(message):
+        """ Handle user's contact information """
+        username = message.from_user.username
+        phone_number = message.contact.phone_number
+        first_name = message.contact.first_name
+        last_name = message.contact.last_name
+
+        async with get_database_connection() as connection:
+            await bot.send_message(chat_id=message.chat.id,
+                                   text="Спасибо! Чем я сегодня могу Вам помочь?",
+                                   reply_markup=markup)
+            add_user(connection, username, first_name, last_name, phone_number)
 
     @bot.message_handler(func=lambda message: message.text == "🥷 Button")
     async def users_handler(message):
         """ Users button handler """
-        connection = connect_to_database()
-        if connection:
-            users_list = get_all_users(connection)
-            if message.from_user.username == 'hijacker555':
-                await bot.send_message(chat_id=message.chat.id,
-                                       text=users_list)
-                logger.info("User '%s' pressed Users button", message.from_user.username)
+        """ Show all users and their phone numbers """
+        async with get_database_connection() as connection:
+            if message.from_user.username == "hijacker555":
+                users_data = get_all_users(connection)
+                if isinstance(users_data, str):
+                    await bot.send_message(chat_id=message.chat.id, text=users_data)
+                else:
+                    users_info = "\n".join(
+                        [f"Username: {username}, Phone Number: {phone}" for username, phone in users_data])
+                    await bot.send_message(chat_id=message.chat.id, text=users_info)
             else:
                 await bot.send_message(chat_id=message.chat.id,
-                                       text="Sorry, you are not authorized to use this button.")
-                logger.warning("Unauthorized access attempt by user '%s'.", message.from_user.username)
-            connection.close()
+                                       text="Извините, но у Вас нет доступа!")
+                logger.warning(
+                    "Неавторизованный доступ от пользователя '%s'.", message.from_user.username)
 
     @bot.message_handler(content_types=['photo'])
     async def handle_photo_message(message):
         async with get_database_connection() as connection:
-            user_exists, user_id = check_user(connection, message.from_user.username)
+            user_exists, user_id, user_phone = check_user(
+                connection, message.from_user.username)
+            if user_exists:
+                try:
+                    # Get the photo file_id
+                    photo_file_id = message.photo[-1].file_id
 
-            try:
-                # Get the photo file_id
-                photo_file_id = message.photo[-1].file_id
+                    # Download the photo
+                    file_info = await bot.get_file(photo_file_id)
+                    file_data = await bot.download_file(file_info.file_path)
 
-                # Download the photo
-                file_info = await bot.get_file(photo_file_id)
-                file_data = await bot.download_file(file_info.file_path)
+                    # Create a PIL Image object
+                    img = Image.open(BytesIO(file_data))
 
-                # Create a PIL Image object
-                img = Image.open(BytesIO(file_data))
+                    # Perform OCR on the image to recognize text
+                    recognized_text = pytesseract.image_to_string(img)
 
-                # Perform OCR on the image to recognize text
-                recognized_text = pytesseract.image_to_string(img)
+                    logger.info("Sent OCR response to '%s': %s",
+                                message.from_user.username, recognized_text)
 
-                logger.info("Sent OCR response to '%s': %s", message.from_user.username, recognized_text)
+                except Exception as e:
+                    # If an error occurs, send an error message
+                    await bot.reply_to(message, f"Error processing image: {e}")
 
-            except Exception as e:
-                # If an error occurs, send an error message
-                await bot.reply_to(message, f"Error processing image: {e}")
+                try:
+                    response = await get_openai_response(recognized_text)
+                    await bot.send_message(chat_id=message.chat.id, text=response)
+                    logger.info("Sent response to '%s': %s",
+                                message.from_user.username, response)
+                    add_message_to_db(connection, user_id,
+                                      recognized_text, response)
 
-            try:
-                response = await get_openai_response(recognized_text)
-                await bot.send_message(chat_id=message.chat.id, text=response)
-                logger.info("Sent response to '%s': %s", message.from_user.username, response)
-                add_message_to_db(connection, user_id, recognized_text, response)
-
-            except openai.OpenAIError as ex:
-                logger.error("Error processing message from '%s': %s", message.from_user.username, ex)
-                logger.warning("Unauthorized access attempt by user '%s'.", message.from_user.username)
+                except openai.OpenAIError as ex:
+                    logger.error("Error processing message from '%s': %s",
+                                 message.from_user.username, ex)
+                    logger.warning(
+                        "Unauthorized access attempt by user '%s'.", message.from_user.username)
+            else:
+                await bot.send_message(chat_id=message.chat.id,
+                                       text="Пожалуйста нажмите кнопку Авторизация для подтверждения контактных данных",
+                                       reply_markup=custom_keyboard)  # Show the contact button separately
 
     @bot.message_handler(content_types=['voice'])
     async def handle_voice_message(message):
         async with get_database_connection() as connection:
-            user_exists, user_id = check_user(connection, message.from_user.username)
+            user_exists, user_id, user_phone = check_user(
+                connection, message.from_user.username)
 
-            try:
-                # Получаем аудиофайл как объект bytes
-                file_info = await bot.get_file(message.voice.file_id)
-                file_data = await bot.download_file(file_info.file_path)
+            if user_exists:
+                try:
+                    # Получаем аудиофайл как объект bytes
+                    file_info = await bot.get_file(message.voice.file_id)
+                    file_data = await bot.download_file(file_info.file_path)
 
-                # Конвертируем аудиофайл в формат WAV
-                audio = AudioSegment.from_ogg(BytesIO(file_data))
-                wav_data = BytesIO()
-                audio.export(wav_data, format="wav")
+                    # Конвертируем аудиофайл в формат WAV
+                    audio = AudioSegment.from_ogg(BytesIO(file_data))
+                    wav_data = BytesIO()
+                    audio.export(wav_data, format="wav")
 
-                # Используем библиотеку SpeechRecognition для распознавания голоса с помощью Google Web Speech API
-                recognizer = sr.Recognizer()
-                with sr.AudioFile(wav_data) as source:
-                    audio_data = recognizer.record(source)
-                    recognized_text = recognizer.recognize_google(audio_data, language='ru-RU')
+                    # Используем библиотеку SpeechRecognition для распознавания голоса с помощью Google Web Speech API
+                    recognizer = sr.Recognizer()
+                    with sr.AudioFile(wav_data) as source:
+                        audio_data = recognizer.record(source)
+                        recognized_text = recognizer.recognize_google(
+                            audio_data, language='ru-RU')
 
-            except Exception as e:
-                # Если произошла ошибка, отправляем сообщение с ошибкой
-                await bot.reply_to(message, f"Произошла ошибка: {e}")
+                except Exception as e:
+                    # Если произошла ошибка, отправляем сообщение с ошибкой
+                    await bot.reply_to(message, f"Произошла ошибка: {e}")
 
-            try:
-                response = await get_openai_response(recognized_text)
-                await bot.send_message(chat_id=message.chat.id, text=response)
-                logger.info("Sent response to '%s': %s", message.from_user.username, response)
-                add_message_to_db(connection, user_id, recognized_text, response)
+                try:
+                    response = await get_openai_response(recognized_text)
+                    await bot.send_message(chat_id=message.chat.id, text=response)
+                    logger.info("Sent response to '%s': %s",
+                                message.from_user.username, response)
+                    add_message_to_db(connection, user_id,
+                                      recognized_text, response)
 
-            except openai.OpenAIError as ex:
-                logger.error("Error processing message from '%s': %s", message.from_user.username, ex)
-                logger.warning("Unauthorized access attempt by user '%s'.", message.from_user.username)
-
+                except openai.OpenAIError as ex:
+                    logger.error("Error processing message from '%s': %s",
+                                 message.from_user.username, ex)
+                    logger.warning(
+                        "Unauthorized access attempt by user '%s'.", message.from_user.username)
+            else:
+                await bot.send_message(chat_id=message.chat.id,
+                                       text="Пожалуйста нажмите кнопку Авторизация для подтверждения контактных данных",
+                                       reply_markup=custom_keyboard)  # Show the contact button separately
 
     @bot.message_handler(content_types=['text'])
     async def reply(message):
         """ Request """
         async with get_database_connection() as connection:
-            user_exists, user_id = check_user(connection, message.from_user.username)
+            user_exists, user_id, user_phone = check_user(
+                connection, message.from_user.username)
 
-            try:
-                response = await get_openai_response(message.text)
-                await bot.send_message(chat_id=message.chat.id, text=response)
-                logger.info("Sent response to '%s': %s", message.from_user.username, response)
-                add_message_to_db(connection, user_id, message.text, response)
+            if user_exists:
+                try:
+                    response = await get_openai_response(message.text)
+                    await bot.send_message(chat_id=message.chat.id, text=response)
+                    logger.info("Sent response to '%s': %s",
+                                message.from_user.username, response)
+                    add_message_to_db(connection, user_id,
+                                      message.text, response)
 
-            except openai.OpenAIError as ex:
-                logger.error("Error processing message from '%s': %s", message.from_user.username, ex)
-                logger.warning("Unauthorized access attempt by user '%s'.", message.from_user.username)
+                except openai.OpenAIError as ex:
+                    logger.error("Error processing message from '%s': %s",
+                                 message.from_user.username, ex)
+                    logger.warning(
+                        "Unauthorized access attempt by user '%s'.", message.from_user.username)
+            else:
+                await bot.send_message(chat_id=message.chat.id,
+                                       text="Пожалуйста нажмите кнопку Авторизация для подтверждения контактных данных",
+                                       reply_markup=custom_keyboard)  # Show the contact button separately
 
     @asynccontextmanager
     async def get_database_connection():
@@ -196,11 +244,13 @@ def setup_handlers():
             temperature=0.5,
         ).get("choices")[0].text
 
+
 def main():
     setup_handlers()
     tracemalloc.start()
     logger.info("Bot started")
     asyncio.run(bot.polling())
+
 
 if __name__ == '__main__':
     main()
