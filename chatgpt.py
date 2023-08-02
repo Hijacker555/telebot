@@ -10,11 +10,11 @@ from telebot.async_telebot import AsyncTeleBot
 from contextlib import asynccontextmanager
 import speech_recognition as sr
 import pytesseract
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from pydub import AudioSegment
 from io import BytesIO
 from db import (connect_to_database, add_user, check_user,
-                create_tables, get_all_users, add_message_to_db)
+                create_tables, get_all_users, add_message_to_db, check_auth_user)
 
 # Set API keys and other configurations
 TELEGRAMBOT_API_KEY = os.environ.get("TELEGRAMBOT_API_KEY")
@@ -46,8 +46,9 @@ logger.addHandler(file_handler)
 openai.api_key = OPENAI_API_KEY
 
 # Create menu
-markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
 users_button = types.KeyboardButton("🥷 Button")
+# gen_image_button = types.KeyboardButton('Сгененрировать картинку')
 menu_buttons = [users_button]
 markup.add(*menu_buttons)
 
@@ -62,40 +63,37 @@ def setup_handlers():
     @bot.message_handler(commands=['start', 'help'])
     async def start(message):
         """ Start or Help """
-        username = message.from_user.username
 
         async with get_database_connection() as connection:
             create_tables(connection)
-
-            user_exists, user_id, user_phone = check_user(connection, username)
-            if user_exists:
-                await bot.send_message(chat_id=message.chat.id, text="Привет! Чем могу помочь?")
-                logger.info("Пользователь '%s' авторизован.", username)
-            else:
+            user_exists, user_id = check_user(connection, message.from_user.id)
+            if not user_exists:    
                 await bot.send_message(chat_id=message.chat.id,
-                                       text="Пожалуйста нажмите кнопку Авторизация для подтверждения контактных данных",
-                                       reply_markup=custom_keyboard)  # Show the contact button separately
+                                        text="Пожалуйста нажмите кнопку Авторизация для подтверждения контактных данных",
+                                        reply_markup=custom_keyboard)  # Show the contact button separately
 
     @bot.message_handler(content_types=['contact'])
     async def handle_contact(message):
         """ Handle user's contact information """
-        username = message.from_user.username
-        phone_number = message.contact.phone_number
-        first_name = message.contact.first_name
-        last_name = message.contact.last_name
+
 
         async with get_database_connection() as connection:
             await bot.send_message(chat_id=message.chat.id,
                                    text="Спасибо! Чем я сегодня могу Вам помочь?",
                                    reply_markup=markup)
-            add_user(connection, username, first_name, last_name, phone_number)
+            
+            username = message.from_user.username
+            phone_number = message.contact.phone_number
+            first_name = message.contact.first_name
+            last_name = message.contact.last_name
+            add_user(connection, message.from_user.id , username, first_name, last_name, phone_number)
 
     @bot.message_handler(func=lambda message: message.text == "🥷 Button")
     async def users_handler(message):
         """ Users button handler """
         """ Show all users and their phone numbers """
-        async with get_database_connection() as connection:
-            if message.from_user.username == "hijacker555":
+        if message.from_user.username == "hijacker555":
+            async with get_database_connection() as connection:
                 users_data = get_all_users(connection)
                 if isinstance(users_data, str):
                     await bot.send_message(chat_id=message.chat.id, text=users_data)
@@ -103,17 +101,18 @@ def setup_handlers():
                     users_info = "\n".join(
                         [f"Username: {username}, Phone Number: {phone}" for username, phone in users_data])
                     await bot.send_message(chat_id=message.chat.id, text=users_info)
-            else:
-                await bot.send_message(chat_id=message.chat.id,
-                                       text="Извините, но у Вас нет доступа!")
-                logger.warning(
-                    "Неавторизованный доступ от пользователя '%s'.", message.from_user.username)
+        else:
+            await bot.send_message(chat_id=message.chat.id,
+                                   text="Извините, но у Вас нет доступа!")
+            logger.warning(
+                "Неавторизованный доступ от пользователя '%s'.", message.from_user.username)
 
+    
     @bot.message_handler(content_types=['photo'])
     async def handle_photo_message(message):
         async with get_database_connection() as connection:
-            user_exists, user_id, user_phone = check_user(
-                connection, message.from_user.username)
+            user_exists, user_id = check_user(
+                connection, message.from_user.id)
             if user_exists:
                 try:
                     # Get the photo file_id
@@ -157,8 +156,7 @@ def setup_handlers():
     @bot.message_handler(content_types=['voice'])
     async def handle_voice_message(message):
         async with get_database_connection() as connection:
-            user_exists, user_id, user_phone = check_user(
-                connection, message.from_user.username)
+            user_exists, user_id = check_user(connection, message.from_user.id)
 
             if user_exists:
                 try:
@@ -204,8 +202,7 @@ def setup_handlers():
     async def reply(message):
         """ Request """
         async with get_database_connection() as connection:
-            user_exists, user_id, user_phone = check_user(
-                connection, message.from_user.username)
+            user_exists, user_id = check_user(connection, message.from_user.id)
 
             if user_exists:
                 try:

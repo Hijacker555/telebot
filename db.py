@@ -28,7 +28,7 @@ def create_tables(conn):
     """Создание таблицы authorized_users"""
     create_table_query = """
     CREATE TABLE IF NOT EXISTS authorized_users (
-        id SERIAL PRIMARY KEY,
+        user_id INTEGER PRIMARY KEY,
         username VARCHAR(255) UNIQUE,
         first_name VARCHAR(255),
         last_name VARCHAR(255),
@@ -40,7 +40,7 @@ def create_tables(conn):
     CREATE TABLE IF NOT EXISTS users_messages (
         id SERIAL PRIMARY KEY,
         time TIMESTAMP DEFAULT NOW(),
-        user_id INTEGER REFERENCES authorized_users (id),
+        user_id INTEGER REFERENCES authorized_users (user_id) ON DELETE CASCADE,
         request TEXT NOT NULL,
         response TEXT NOT NULL
     );
@@ -55,12 +55,12 @@ def create_tables(conn):
         print("Ошибка при создании таблиц:", ex)
 
 
-def add_user(connection, username, first_name, last_name, phone):
+def add_user(connection, user_id, username, first_name, last_name, phone):
     # Code to add the user to the 'authorized_users' table
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "INSERT INTO authorized_users (username, first_name, last_name, phone_number) VALUES (%s, %s, %s, %s) RETURNING id", (username, first_name, last_name, phone))
+                "INSERT INTO authorized_users (user_id, username, first_name, last_name, phone_number) VALUES (%s, %s, %s, %s, %s) RETURNING user_id", (user_id, username, first_name, last_name, phone))
             user_id = cursor.fetchone()[0]
         connection.commit()
         return user_id
@@ -68,12 +68,29 @@ def add_user(connection, username, first_name, last_name, phone):
         print("Ошибка при добавлении пользователя в базу данных:", ex)
 
 
-def check_user(connection, username):
+def check_user(connection, user_id):
     """Check if a user exists in the database and return user_id if found"""
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT id, phone_number FROM authorized_users WHERE username = %s", (username,))
+                "SELECT user_id FROM authorized_users WHERE user_id = %s", (user_id,))
+            user_data = cursor.fetchone()
+            if user_data:
+                # Return a tuple with the boolean and user_phone
+                return True, user_data[0]
+            else:
+                return False, None # Return False and None if user is not found
+    except psycopg2.Error as ex:
+        print("Ошибка при проверке пользователя в базе данных:", ex)
+        return False, None  # Return False and None in case of an error
+
+
+def check_auth_user(connection, phone):
+    """Check if a user exists in the database and return user_id if found"""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, phone_number FROM authorized_users WHERE phone_number = %s", (phone,))
             user_data = cursor.fetchone()
             if user_data:
                 # Return a tuple with the boolean and user_phone
@@ -117,5 +134,3 @@ def update_phone_number(connection, user_id, phone_number):
     with connection.cursor() as cursor:
         cursor.execute(update_query, (phone_number, user_id))
     connection.commit()
-
-
