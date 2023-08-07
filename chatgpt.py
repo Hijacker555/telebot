@@ -13,8 +13,7 @@ import pytesseract
 from PIL import Image, ImageDraw, ImageFont
 from pydub import AudioSegment
 from io import BytesIO
-from db import (connect_to_database, add_user, check_user,
-                create_tables, get_all_users, add_message_to_db, check_auth_user)
+from db import *
 
 # Set API keys and other configurations
 TELEGRAMBOT_API_KEY = os.environ.get("TELEGRAMBOT_API_KEY")
